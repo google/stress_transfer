@@ -29,7 +29,7 @@ def Cfs(tensors, n_vec_normal, n_vec_in_plane, coefficient_of_friction):
   for tensor in tensors:
     delta_tau = np.dot(np.dot(tensor, n_vec_normal), n_vec_in_plane)
     delta_sigma = np.dot(np.dot(tensor, n_vec_normal), n_vec_normal)
-    cfc.append(delta_tau - coefficient_of_friction * delta_sigma)
+    cfc.append(delta_tau + coefficient_of_friction * delta_sigma)
   return np.array(cfc)
 
 
@@ -53,7 +53,7 @@ def CfsNormal(tensors, n_vec_normal, coefficient_of_friction):
   cfc = []
   for tensor in tensors:
     delta_sigma = np.dot(np.dot(tensor, n_vec_normal), n_vec_normal)
-    cfc.append(-coefficient_of_friction * delta_sigma)
+    cfc.append(coefficient_of_friction * delta_sigma)
   return np.array(cfc)
 
 
@@ -82,7 +82,7 @@ def CfsTotal(tensors, n_vec_normal, n_vec_in_plane, coefficient_of_friction):
     delta_tau2 = np.dot(np.dot(tensor, n_vec_normal), n_vec_cross)
     delta_sigma = np.dot(np.dot(tensor, n_vec_normal), n_vec_normal)
     cfc.append(np.abs(delta_tau1) + np.abs(delta_tau2)
-               - coefficient_of_friction * delta_sigma)
+               + coefficient_of_friction * delta_sigma)
   return np.array(cfc)
 
 
