@@ -1,0 +1,8 @@
+# https://cs.corp.google.com/#google3/devtools/metadata/presubmit.proto
+
+presubmit: {
+  review_notify: "geo-cam+reviews"
+  check_lint: {
+    report_all_errors: true
+  }
+}

@@ -1,0 +1,19 @@
+application: shaky-foundation-02138
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: yes
+
+handlers:
+- url: .*
+  script: google3.third_party.py.earthquakes.appengine.main.app
+
+libraries:
+- name: jinja2
+  version: "2.6"
+- name: markupsafe
+  version: "0.15"
+- name: ssl
+  version: latest
+- name: numpy
+  version: latest

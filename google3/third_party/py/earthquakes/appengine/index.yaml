@@ -1,0 +1,36 @@
+indexes:
+
+- kind: RunStatus
+  properties:
+    - name: is_completed
+    - name: last_runner_checkin
+- kind: RunStatus
+  properties:
+    - name: is_completed
+    - name: num_errors
+- kind: RunStatus
+  properties:
+    - name: is_completed
+    - name: parameter_filename
+- kind: RunStatus
+  properties:
+    - name: is_completed
+    - name: can_retry
+    - name: last_runner_checkin
+- kind: RunStatus
+  properties:
+    - name: can_retry
+    - name: high_priority
+    - name: is_completed
+    - name: last_runner_checkin
+- kind: RunStatus
+  properties:
+    - name: is_completed
+    - name: can_retry
+    - name: high_priority
+- kind: RunStatus
+  properties:
+    - name: is_completed
+    - name: high_priority
+
+
