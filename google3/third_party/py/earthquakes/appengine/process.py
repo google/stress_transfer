@@ -1,3 +1,21 @@
+# Copyright (c) 2015 Google, Inc.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """Scheduler for all Srcmod tasks."""
 
 import datetime
@@ -5,15 +23,10 @@ import json
 import logging
 import pickle
 
-import cloudstorage
 from flask import Flask
 from flask import request, make_response
 
 from google.appengine.ext import ndb
-
-# pylint: disable=unused-import
-# pylint: disable=g-direct-third-party-import
-import google3.third_party.py.earthquakes.appengine.zipped_libs
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -142,18 +155,6 @@ class RunStatus(ndb.Model):
     """Returns URL to JSON completed results."""
     return '{}&json'.format(self.CompletedURL())
 
-  def ImageFilename(self):
-    """Returns the GCS path to the image file."""
-    return '/{}/graphs/{}'.format(BUCKET, self.Filename())
-
-  def ResultsFilename(self):
-    """Returns the GCS path to the results file."""
-    return '{}/results/{}.txt'.format(BUCKET, self.Filename())
-
-  def URLForImage(self):
-    """Returns the URL for the image."""
-    return '/scheduler/img/{}'.format(int(self.key.id()))
-
   def URLForResults(self):
     """Returns the URL for the results data."""
     return '/scheduler/results/{}'.format(self.Filename())
@@ -163,9 +164,6 @@ class RunStatus(ndb.Model):
     if len(self.errors) > len(self.full_errors):
       errors = self.errors
     e = '<hr>'.join([_.replace('\n', '<br>') for _ in errors])
-    image_url = ''
-    if self.is_completed:
-      image_url = '<img src="{}"> <br>'.format(self.URLForImage())
     ret = """
       id {} <br>
       parameters {} <br>
@@ -174,11 +172,9 @@ class RunStatus(ndb.Model):
       last_runner_checkin {} <br>
       num_errors {} <br>
       errors <br> {} <br>
-      {}
       <hr>
     """.format(self.key.id(), self.parameters, self.is_completed,
-               self.high_priority, self.last_runner_checkin, self.num_errors,
-               e, image_url)
+               self.high_priority, self.last_runner_checkin, self.num_errors, e)
     return ret
 
   def DictStatus(self):
@@ -189,7 +185,6 @@ class RunStatus(ndb.Model):
         'is_completed': self.is_completed,
         'parameters': self.parameters,
         'num_errors': self.num_errors,
-        'results': self.ResultsFilename(),
     }
 
 
@@ -308,39 +303,6 @@ def GetStatus():
   return ret + status
 
 
-def GetImage(key):
-  """Get the graph of a previous run."""
-  if not key:
-    return 'No key found', 404
-  run = RunStatus.get_by_id(int(key))
-  if not run:
-    return 'No object found', 404
-  with cloudstorage.open(run.ImageFilename(), 'r') as f:
-    data = f.read()
-  response = make_response(data)
-  response.headers['Content-Type'] = 'image/png'
-  return response
-
-
-def GetResults(key):
-  """Get the data of a previous run."""
-  if not key:
-    return 'No key found', 404
-  run = RunStatus.get_by_id(int(key))
-  if not run:
-    return 'No object found', 404
-  logging.info('getting results')
-  with cloudstorage.open(run.ResultsFilename(), 'r') as f:
-    data = pickle.load(f)
-  logging.info('got results')
-  if request.args.get('json'):
-    response = make_response(json.dumps(data))
-  else:
-    response = make_response(data)
-  response.headers['Content-Type'] = 'text/plain'
-  return response
-
-
 def ReportError():
   """Reports an error."""
   key = GetKey(request.args)
@@ -381,11 +343,6 @@ def UploadResult():
   run.is_completed = True
   run.put()
   return 'Successfully updated image {}'.format(key)
-
-
-def GetAllResults():
-  """Get all the results."""
-  return 'Nothing here'
 
 
 def RestartRun(key):

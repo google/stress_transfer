@@ -1,9 +1,30 @@
+# Copyright (c) 2015 Google, Inc.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """Main server for appengine."""
 import datetime
 import json
 import logging
 
-import google3
+try:
+  import google3
+except ImportError:  # Non-Google
+  pass
 
 from earthquakes import isc
 from flask import Flask
@@ -19,7 +40,6 @@ DATE_FORMAT = '%Y-%m-%d:%H:%M'
 
 # Add the scheduler rules.
 app.add_url_rule('/scheduler/status', 'status', view_func=process.GetStatus)
-app.add_url_rule('/scheduler/all', 'all', view_func=process.GetAllResults)
 app.add_url_rule('/scheduler/checkin', 'checkin', view_func=process.Checkin)
 app.add_url_rule('/scheduler/request_work', 'request_work',
                  view_func=process.RequestWork)
@@ -28,9 +48,6 @@ app.add_url_rule('/scheduler/upload', 'upload', view_func=process.UploadResult,
 app.add_url_rule('/scheduler/error', 'error', view_func=process.ReportError,
                  methods=['POST'])
 app.add_url_rule('/scheduler/add_work', 'add_work', view_func=process.AddWork)
-app.add_url_rule('/scheduler/img/<key>', 'image', view_func=process.GetImage)
-app.add_url_rule('/scheduler/results/<key>', 'result',
-                 view_func=process.GetResults)
 app.add_url_rule('/scheduler/restart/<key>', 'restart',
                  view_func=process.RestartRun)
 app.add_url_rule('/scheduler/completed', 'completed',
