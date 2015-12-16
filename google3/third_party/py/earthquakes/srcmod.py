@@ -61,12 +61,6 @@ FIELD_MAP = [
 KM2M = 1e3  # Convert kilometers to meters
 CM2M = 1e-2  # Convert centimeters to meters
 
-# Data files path
-PATH = 'google3/third_party/py/earthquakes/srcmod/data/'
-
-# UTM SOUTHERN ZONES
-SOUTH_ZONES = [z[1] for z in utm.conversion.ZONE_LETTERS if z[0] < 0]
-
 
 def _FindFields(data, opt_ignore_duplicate=True):
   """Finds all 'FIELD = VAL' in given string.

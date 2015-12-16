@@ -11,9 +11,6 @@ from earthquakes.isc import isc
 from google3.testing.pybase import googletest
 
 
-PATH = 'google3/third_party/py/earthquakes/isc/test_data.csv'
-
-
 class FileIoTest(googletest.TestCase):
 
   def _GetRawData(self, t=time.gmtime()):
