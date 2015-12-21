@@ -6,7 +6,7 @@ threadsafe: yes
 
 handlers:
 - url: .*
-  script: google3.third_party.py.earthquakes.appengine.main.app
+  script: main.app
 
 libraries:
 - name: jinja2

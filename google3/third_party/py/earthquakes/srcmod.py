@@ -33,12 +33,6 @@ import logging
 import math
 import re
 
-
-try:
-  import google3
-except ImportError: # When running in cloud.
-  pass
-
 import gcs
 import numpy as np
 import pyproj

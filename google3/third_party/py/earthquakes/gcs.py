@@ -24,11 +24,6 @@ import os
 import StringIO
 import tempfile
 
-try:
-  import google3
-except ImportError:  # When running in the cloud.
-  pass
-
 from apiclient import discovery
 from apiclient.errors import HttpError
 from apiclient.http import MediaIoBaseDownload

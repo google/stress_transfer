@@ -24,11 +24,6 @@ import datetime
 import logging
 import math
 
-try:
-  import google3
-except ImportError:  # When running in cloud.
-  pass
-
 import calc
 import isc
 import numpy as np

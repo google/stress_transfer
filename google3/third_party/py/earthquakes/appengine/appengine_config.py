@@ -23,5 +23,3 @@ import vendor
 # versions.
 vendor.add('lib')
 
-# pylint: disable=unused-import
-import google3.third_party.py.earthquakes.appengine.zipped_libs

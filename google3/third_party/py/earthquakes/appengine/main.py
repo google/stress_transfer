@@ -21,11 +21,6 @@ import datetime
 import json
 import logging
 
-try:
-  import google3
-except ImportError:  # Non-Google
-  pass
-
 from earthquakes import isc
 from flask import Flask
 from flask import request
