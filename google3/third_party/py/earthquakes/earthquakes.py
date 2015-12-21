@@ -34,7 +34,6 @@ import gcs
 import ProcessSrcmod as process
 import requests
 
-HOST = 'http://shaky-foundation-02138.appspot.com/'
 BUCKET = 'clouddfe-cfs'
 SRCMOD = 'gs://{}/srcmod'.format(BUCKET)
 UUID = str(uuid.uuid1())
@@ -51,6 +50,9 @@ parser.add_option('-p', '--parameters', dest='parameters', default=None,
 parser.add_option('-i', '--id', dest='id',
                   default='LOCAL {}'.format(time.asctime()),
                   help='ID/filename to use for files on runs with parameters.')
+parser.add_option('-h', '--host', dest='host',
+                  default='http://shaky-foundation-02138.appspot.com/',
+                  help='AppEngine hostname that\'s running the scheduler.')
 
 
 def Filename(parameters):
@@ -69,7 +71,7 @@ def GetResultFileNameOnCloud(parameters):
   return 'gs://{}/results/{}.txt'.format(BUCKET, Filename(parameters))
 
 
-def RequestWork(retries=10):
+def RequestWork(host, retries=10):
   """Requests work from the scheduler.
 
   Arguments:
@@ -77,7 +79,7 @@ def RequestWork(retries=10):
   Returns:
     Dictionary of work values.
   """
-  url = HOST + '/scheduler/request_work'
+  url = host + '/scheduler/request_work'
   logging.info('Requesting work %s', url)
   while True:
     if retries < 0:
@@ -101,13 +103,14 @@ def RequestWork(retries=10):
   return ret
 
 
-def ReportResults(key):
+def ReportResults(host, key):
   """Reports results to appengine scheduler.
 
   Arguments:
+    host: The host to connect to.
     key: What key to send results to.
   """
-  url = HOST + '/scheduler/upload'
+  url = host + '/scheduler/upload'
   logging.info('Sending (%d) results %s', key, url)
   r = requests.post(url, params={'key': key})
   if r.status_code != requests.codes.ok:
@@ -116,14 +119,15 @@ def ReportResults(key):
   logging.info('successfully uploaded %s', key)
 
 
-def ReportError(key, error):
+def ReportError(host, key, error):
   """Reports an error to the server.
 
   Arguments:
+    host: The host to connect to.
     key: The key to report error to.
     error: Error string (stack trace) to report.
   """
-  url = HOST + '/scheduler/error'
+  url = host + '/scheduler/error'
   r = requests.post(url, data={'error': error}, params={'key': key})
   if r.status_code != requests.codes.ok:
     logging.error('Error (%d) reporting error\n %s', r.status_code, error)
@@ -140,7 +144,7 @@ def Checkin(key):
   Returns:
     True/False if the checkin was successful.
   """
-  url = HOST + '/scheduler/checkin'
+  url = host + '/scheduler/checkin'
   r = requests.get(url, params={'key': key, 'uuid': UUID})
   if r.status_code != requests.codes.ok:
     return False
@@ -148,7 +152,7 @@ def Checkin(key):
 
 
 
-def ReportStatus(key, interval):
+def ReportStatus(host, key, interval):
   """Ping the server, reporting living status.
 
   Continuously pings the server saying, "this UUID is alive and still
@@ -156,6 +160,7 @@ def ReportStatus(key, interval):
   worker. To kill this thread, set the global "should_status" to False.
 
   Args:
+    host: The host to connect to.
     key: The UUID (as a string) for which we should ping as "alive".
     interval: Time in seconds between pings.
   """
@@ -163,7 +168,7 @@ def ReportStatus(key, interval):
   logging.info('Starting ping thread')
   while should_status:
     logging.info('Pinging server for id %d', key)
-    if not Checkin(key):
+    if not Checkin(host, key):
       logging.info('Failed to checkin.')
       return
     for _ in range(interval):
@@ -199,7 +204,7 @@ def main(_=None):
       }
     else:
       # Grab work packet from the web.
-      work = RequestWork()
+      work = RequestWork(options.host)
     if not work:
       logging.info('No Work')
       break
@@ -209,7 +214,8 @@ def main(_=None):
       if not run_local:
         # Start pinging the server.
         should_status = True
-        status_thread = threading.Thread(target=ReportStatus, args=(key, 240))
+        status_thread = threading.Thread(target=ReportStatus,
+                                         args=(options.host, key, 240))
         status_thread.start()
 
       # Get everything into place for processing.
@@ -235,7 +241,7 @@ def main(_=None):
       logging.info('size: %d', sys.getsizeof(criteria))
       gcs.Write(results_filename, pickle.dumps(criteria))
       if not run_local:
-        ReportResults(key)
+        ReportResults(options.host, key)
 
     except:
       # Uh-oh. We've had an exception. Capture it, and report it.
@@ -244,7 +250,7 @@ def main(_=None):
       traceback.print_exc(file=f)
       stack = f.getvalue()
       if not run_local:
-        ReportError(key, stack)
+        ReportError(options.host, key, stack)
       logging.error('EXCEPTION. Stack trace\n%s', stack)
 
     finally:

@@ -34,16 +34,16 @@ then
   docker build -t ${IMAGE} .
   gcloud docker push ${IMAGE}
 
-  start_instance eq-central us-central1-b 20
-  start_instance eq-east us-east1-b 4
-  start_instance eq-europe europe-west1-c 20
-  start_instance eq-asia asia-east1-b 20
+  start_instance eq-central us-central1-b 1
+  #start_instance eq-east us-east1-b 1
+  #start_instance eq-europe europe-west1-c 1
+  #start_instance eq-asia asia-east1-b 1
 elif [ "$cmd" == "stop" ]
 then
   stop_instance eq-central us-central1-b
-  stop_instance eq-east us-east1-b
-  stop_instance eq-europe europe-west1-c
-  stop_instance eq-asia asia-east1-b
+  #stop_instance eq-east us-east1-b
+  #stop_instance eq-europe europe-west1-c
+  #stop_instance eq-asia asia-east1-b
 else
   echo "argument error $cmd"
   exit

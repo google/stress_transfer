@@ -1,0 +1,162 @@
+Earthquakes
+===========
+
+NB: This is not an official Google product.
+
+This is a release of the Coloumb Failure Stress CFS) calculation framework
+Google has been using in conjunction with Brendan Meade (meade@fas.harvard.edu).
+The code breaks into two main pieces:
+
+  * The calculation framework.
+      The code in the root directory builds a version of the CFS calculation,
+      and has the capability to run this in a docker instance on Google Compute
+      Engine (GCE).
+  * An AppEngine based scheduling framework.
+      The theory we're working on requires multiple runs per quake.
+      Specifically, we run the CFS calcuation for a given quake at multiple
+      depths, and possibly multiple parameters. We use AppEngine to schedule GCE
+      based workers.
+
+
+Running the code.
+=================
+
+There are two ways you can run the CFS code: locally and on GCE.
+
+LOCAL
+-----
+
+Locally running the result is as simple as:
+
+  ./earthquakes.py -p [QUAKE_PARAMETERS_AS_JSON_ARRAY]
+
+An example JSON array would be:
+
+  '["s2005SUMATR01JIxx.fsp", 0.4, 30000000000.0, 300000.0, 1000.0, -46500.0, 365.0, "rev"]'
+
+Where the different parameters are:
+
+  [0] The SRCMOD file for which you want to model the quake. This file is read
+        from Google Cloud Storage (GCS). See notes below about SRCMOD and ISC.
+  [1] Coefficicent of friction used in the simulations.
+  [2] Value for MuLambdaLame used in the simulations
+  [3] Near Field Distance in meters (how far you want from the fault in SRCMOD
+        you want to model the CFS).
+  [4] Spacing grid in meters (distance between CFS modelling points).
+  [5] Observational Depth in meters (Distance from the surface for which you
+        want to model the quake.
+  [6] Number of days past the day of the quake that we will consider a quake as
+        an aftershock.
+  [7] ISC catalog we use for aftershocks. Valid parameters include "rev", "ehb",
+        and "comp". See the notes below about ISC and SRCMOD.
+
+The results will be saved on a remote GCS drive. By default, the results are
+stored in a pickle file. For our example JSON string, the RESULT_FILENAME will
+be:
+
+  gs://clouddfe-cfs/results/s2005SUMATR01JIxx.fsp_046500.0.txt
+
+
+REMOTE (Google Compute Engine)
+------------------------------
+
+In addition to locally running the code, you could also run the CFS calcuation
+in Google Compute Engine. The steps to do this are:
+
+  1) Setup an AppEngine scheduler.
+
+     Included in the source directory ([src]/appengine/) is an AppEngine
+     based scheduler. You should follow the instructions at
+
+     https://cloud.google.com/appengine/docs/python/gettingstartedpython27/introduction
+
+     to start/run the appengine app.
+
+  2) Schedule some work with the scheduler.
+
+     Included with the earthquakes code ([src]/add_work.py) is a python program
+     that will connect to the appengine instance and schedule work. The easiest
+     way to use this script is to edit the add_work script to schedule the work
+     you'd like. The lines of interest are in the main function:
+
+        # Set your custom parameters here.
+  	for f in FILES:
+    	p = {
+        	'srcmod': f,
+        	'coefficient_of_friction': 0.4,
+        	'mu_lambda_lame': 3e10,
+        	'near_field_distance': 300e3,
+        	'spacing_grid': 5e3,
+        	'days': 365,
+        	'isc_catalog': 'rev',
+    	}
+
+     And then run your add_work.py script:
+
+       ./add_work.py -h http://[MY_APPENGINE_HOST]
+
+     You can check the progress of the scheduling by connecting to:
+
+       http://[MY_APPENGINE_HOST]/scheduler/status
+
+  3) Install Docker, and GCE tools.
+
+      We use Docker to install the app on GCE. As such, you need to install
+      Docker on your machine, and Google Cloud SDK. Check your system
+      documentation for installation of docker on your machine. For the Google
+      Cloud SDK, please visit:
+
+        https://cloud.google.com/sdk/
+
+      You will want to create a Google Cloud project:
+
+        https://cloud.google.com/compute/docs/projects
+
+      Additionally, you want to configure your gcloud utilities to point to your
+      project.
+
+        gcloud auth login
+	gcloud auth login [YOUR_PROJECT]
+
+  4) Start your docker instances.
+
+      The first thing you want to do is edit the Dockerfile in [src]/Dockerfile
+      to point to your AppEngine host. Modify the last line:
+
+        CMD ["/usr/bin/python", "/earthquakes.py", "-j32", "-hhttp://[APPENGINE_HOST]"]
+
+      Now, you want to start your docker instances:
+
+        bash [src]/run_docker.sh start
+
+      By default, we start a single 32 core machine in central us. You can
+      modify the bash script to start multiple instances in multiple
+      datacenters.
+
+      NB: You can change the machine type in the run_docker.sh script. If you
+      change the number of machine cores, you want want to modify the number of
+      jobs in the Dockerfile with:
+
+        CMD ["/usr/bin/python", "/earthquakes.py", "-j[cores]", "-hhttp://[APPENGINE_HOST]"]
+
+  5) Monitor the progress.
+
+      Visit:
+
+        http://[APPENGINE_HOST]/scheduler/status
+
+      and watch your workers run. When there's no more work to do, turn off the
+      instances with:
+
+        bash [src]/run_docker.sh stop
+
+  6) Download your results.
+
+        gsutil cp gs://clouddfe-cfs/results/*.txt .
+
+      You might want to delete them as with:
+
+        gsutil rm gs://clouddfe-cfs/result/*.txt
+
+
+

@@ -34,7 +34,12 @@ print = lambda x: sys.stdout.write('%s\n' % x)
 
 import requests
 
-HOST = 'http://shaky-foundation-02138.appspot.com/'
+
+# Parsing the options.
+parser = OptionParser()
+parser.add_option('-h', '--host', dest='host',
+                  default='http://shaky-foundation-02138.appspot.com/',
+                  help='AppEngine hostname that\'s running the scheduler.')
 
 FILES = [
     's2004SUMATR01AMMO.fsp',
@@ -347,9 +352,12 @@ def Linspace(start, end, steps):
 
 
 def main(unused_argv):
+  (options, _) = parser.parse_args()
+  url = options.host + '/scheduler/add_work'
+
   threads = []
-  url = HOST + '/scheduler/add_work'
   for f in FILES:
+    # Set your custom parameters here.
     p = {
         'srcmod': f,
         'coefficient_of_friction': 0.4,
@@ -358,7 +366,6 @@ def main(unused_argv):
         'spacing_grid': 5e3,
         'days': 365,
         'isc_catalog': 'rev',
-        'priority': 1,
     }
     for depth in Linspace(-2.5e3, -47.5e3, 10):  # Hector
       p['obs_depth'] = depth
